@@ -77,6 +77,14 @@ function App() {
                 <span className="detail-label">Ощущается как</span>
                 <span className="detail-value">{weather.feels_like}°</span>
               </div>
+              <div className="detail-item">
+                <span className="detail-label">Влажность</span>
+                <span className="detail-value">{weather.humidity}%</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Ветер</span>
+                <span className="detail-value">{weather.wind_speed} м/с</span>
+              </div>
             </div>
           </div>
         )}

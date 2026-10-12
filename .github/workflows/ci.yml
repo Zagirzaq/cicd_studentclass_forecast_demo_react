@@ -1,0 +1,66 @@
+# Сценарий CI: тесты backend -> сборка frontend -> упаковка в ZIP -> артефакт
+name: CI Weather App
+
+# Когда запускать: при каждом push в ветку main
+# (workflow_dispatch - дополнительно кнопка ручного запуска во вкладке Actions)
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  # Задача 1: устанавливаем зависимости backend и запускаем тесты
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Скачиваем код репозитория
+        uses: actions/checkout@v4
+
+      - name: Устанавливаем Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Устанавливаем пакеты backend
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Запускаем тесты backend
+        working-directory: ./backend
+        run: npm test
+
+  # Задача 2: собираем frontend, кладём его в backend и упаковываем в ZIP
+  # needs: test - запускается только если тесты прошли успешно
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Скачиваем код репозитория
+        uses: actions/checkout@v4
+
+      - name: Устанавливаем Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Собираем React-приложение
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Копируем собранный frontend в backend/public
+        run: |
+          mkdir -p backend/public
+          cp -r frontend/dist/* backend/public/
+
+      - name: Упаковываем приложение в ZIP (без node_modules)
+        working-directory: ./backend
+        run: zip -r ../weather-app.zip . -x "node_modules/*"
+
+      - name: Сохраняем ZIP как артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: weather-app
+          path: weather-app.zip
+          retention-days: 7
